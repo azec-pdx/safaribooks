@@ -13,3 +13,6 @@ cookies.json
 *.log
 *.txt
 *.code-workspace
+
+# For pyenv local python versions
+.python-version
