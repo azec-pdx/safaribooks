@@ -1,0 +1,8 @@
+
+# Same as yapf in setup.cfg
+line-length = 160
+indent-width = 4
+
+[lint]
+select = ["D", "F"]
+ignore = ["D212","D400","D406","D407"]
