@@ -22,7 +22,6 @@ PATH = os.path.dirname(os.path.realpath(__file__))
 COOKIES_FILE = os.path.join(PATH, "cookies.json")
 
 ORLY_BASE_HOST = "oreilly.com"  # PLEASE INSERT URL HERE
-
 SAFARI_BASE_HOST = "learning." + ORLY_BASE_HOST
 API_ORIGIN_HOST = "api." + ORLY_BASE_HOST
 
@@ -30,6 +29,14 @@ ORLY_BASE_URL = "https://www." + ORLY_BASE_HOST
 SAFARI_BASE_URL = "https://" + SAFARI_BASE_HOST
 API_ORIGIN_URL = "https://" + API_ORIGIN_HOST
 PROFILE_URL = SAFARI_BASE_URL + "/profile/"
+
+
+# Seattle Public Library Proxy
+SPL_ORLY_PROXY_TLD = "ezproxy.spl.org"
+SPL_ORLY_BASE_HOST = "learning-oreilly-com." + SPL_ORLY_PROXY_TLD
+SPL_API_ORIGIN_HOST = "api." + SPL_ORLY_BASE_HOST
+SPL_ORLY_BASE_URL = "https://" + SPL_ORLY_BASE_HOST
+SPL_PROFILE_URL = SPL_ORLY_BASE_URL + "/profile/"
 
 # DEBUG
 USE_PROXY = False
@@ -140,11 +147,11 @@ class Display:
         output = self.SH_YELLOW + ("""
        ____     ___         _
       / __/__ _/ _/__ _____(_)
-     _\ \/ _ `/ _/ _ `/ __/ /
-    /___/\_,_/_/ \_,_/_/ /_/
+     _\\  / _ `/ _/ _ `/ __/ /
+    /___/\\_,_/_/ \\_,_/_/ /_/
       / _ )___  ___  / /__ ___
-     / _  / _ \/ _ \/  '_/(_-<
-    /____/\___/\___/_/\_\/___/
+     / _  / _ \\/ _ \\/  '_/(_-<
+    /____/\\___/\\___/_/\\_\\/___/
 """ if random() > 0.5 else """
  ██████╗     ██████╗ ██╗  ██╗   ██╗██████╗
 ██╔═══██╗    ██╔══██╗██║  ╚██╗ ██╔╝╚════██╗
@@ -194,7 +201,7 @@ class Display:
     def done(self, epub_file):
         self.info("Done: %s\n\n" % epub_file +
                   "    If you like it, please * this project on GitHub to make it known:\n"
-                  "        https://github.com/lorenzodifuccia/safaribooks\n"
+                  "        https://github.com/azec-pdx/safaribooks\n"
                   "    e don't forget to renew your Safari Books Online subscription:\n"
                   "        " + SAFARI_BASE_URL + "\n\n" +
                   self.SH_BG_RED + "[!]" + self.SH_DEFAULT + " Bye!!")
@@ -311,6 +318,14 @@ class SafariBooks:
 
     def __init__(self, args):
         self.args = args
+        
+        
+        if self.args.use_spl:
+            self.LOGIN_URL = "https://ezproxy.spl.org/login?url=https://www.oreilly.com/library/view/temporary-access"
+            self.LOGIN_ENTRY_URL = SPL_ORLY_BASE_URL + "/login/unified/?next=/home/"
+            self.API_TEMPLATE = SPL_ORLY_BASE_URL + "/api/v1/book/{0}/"
+            self.HEADERS['Referer'] = self.LOGIN_ENTRY_URL
+
         self.display = Display("info_%s.log" % escape(args.bookid))
         self.display.intro()
 
@@ -516,7 +531,15 @@ class SafariBooks:
             self.display.exit("Login: unable to reach Safari Books Online. Try again...")
 
     def check_login(self):
-        response = self.requests_provider(PROFILE_URL, perform_redirect=False)
+        
+        profile_url = None
+        if self.args.use_spl:
+            profile_url = SPL_PROFILE_URL
+        else:
+            profile_url = PROFILE_URL
+        self.display.info(f"Using profile url for login: {profile_url}")
+
+        response = self.requests_provider(profile_url, perform_redirect=False)
 
         if response == 0:
             self.display.exit("Login: unable to reach Safari Books Online. Try again...")
@@ -1086,6 +1109,10 @@ if __name__ == "__main__":
         "--preserve-log", dest="log", action='store_true', help="Leave the `info_XXXXXXXXXXXXX.log`"
                                                                 " file even if there isn't any error."
     )
+    arguments.add_argument(
+        "--use-spl", dest="use_spl", action='store_true', help="If set, uses Seattle Public Library EZ Proxy"
+    )
+
     arguments.add_argument("--help", action="help", default=argparse.SUPPRESS, help='Show this help message.')
     arguments.add_argument(
         "bookid", metavar='<BOOK ID>',
