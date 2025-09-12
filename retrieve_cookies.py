@@ -23,6 +23,8 @@ def get_oreilly_cookies():
         ".ezproxy.spl.org",
         ".spl.org",
         ".www.spl.org",
+        "learning.oreilly.com",
+        "oreilly.com",
     ]
     cookies = {}
     for d in domains:
